@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "dgSpecHash": "I+DdiLu0l00=",
+  "success": true,
+  "projectFilePath": "C:\\Users\\guilh\\Sistema_GranBier\\GranBier.Api\\GranBier.Api.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\guilh\\.nuget\\packages\\microsoft.aspnetcore.openapi\\10.0.9\\microsoft.aspnetcore.openapi.10.0.9.nupkg.sha512",
+    "C:\\Users\\guilh\\.nuget\\packages\\microsoft.openapi\\2.0.0\\microsoft.openapi.2.0.0.nupkg.sha512"
+  ],
+  "logs": []
+}
