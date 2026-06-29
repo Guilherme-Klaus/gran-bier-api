@@ -1,21 +1,30 @@
 using Microsoft.EntityFrameworkCore;
 using GranBier.Api.Data;
-using System.Text.Json.Serialization; // 1. ADICIONE ESTA LINHA AQUI NO TOPO!
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configurando o Banco de Dados
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// 2. SUBSTITUA O AddControllers() POR ESTE BLOCO ABAIXO:
 builder.Services.AddControllers().AddJsonOptions(options =>
 {
     options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
-}); 
+});
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+// REGRA NOVA: O Leão de Chácara vai deixar qualquer um passar (perfeito para testes)
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("LiberouGeral", policy =>
+    {
+        policy.AllowAnyOrigin() 
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
 
 var app = builder.Build();
 
@@ -26,5 +35,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// ATIVANDO A REGRA
+app.UseCors("LiberouGeral");
+
 app.MapControllers(); 
 app.Run();
