@@ -9,7 +9,11 @@ namespace GranBier.Api.Models
         public string NomeCompleto { get; set; } = string.Empty;
         public string Cpf { get; set; } = string.Empty;
         public string Endereco { get; set; } = string.Empty;
-        public string Cep { get; set; } = string.Empty; // NOVO CAMPO
+        
+        // NOVOS CAMPOS PARA O ENDEREÇO E OBSERVAÇÕES
+        public string Numero { get; set; } = string.Empty; 
+        public string Cep { get; set; } = string.Empty; 
+        
         public DateTime DataNascimento { get; set; }
         public string Observacoes { get; set; } = string.Empty;
     }

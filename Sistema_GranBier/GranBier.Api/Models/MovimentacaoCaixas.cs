@@ -10,5 +10,8 @@ namespace GranBier.Api.Models
         public string Tipo { get; set; } = "Saida"; 
         public decimal Valor { get; set; }
         public DateTime Data { get; set; } = DateTime.Now;
+        
+        // NOVO: Controle de Dinheiro, Cartão ou PIX
+        public string FormaPagamento { get; set; } = string.Empty; 
     }
 }

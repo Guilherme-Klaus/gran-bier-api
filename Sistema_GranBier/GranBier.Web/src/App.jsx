@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 
 function App() {
   const [abaAtual, setAbaAtual] = useState('clientes')
@@ -8,14 +9,15 @@ function App() {
   // ==========================================
   const [clientes, setClientes] = useState([])
   const [nome, setNome] = useState(''); const [cpf, setCpf] = useState(''); const [endereco, setEndereco] = useState(''); const [cep, setCep] = useState('')
+  const [numero, setNumero] = useState(''); const [observacoes, setObservacoes] = useState('') // NOVOS CAMPOS CLIENTE
   const [clienteEditandoId, setClienteEditandoId] = useState(null)
   const [termoBuscaCliente, setTermoBuscaCliente] = useState('') 
 
   const [equipamentos, setEquipamentos] = useState([])
-  const [categoriaEquipamento, setCategoriaEquipamento] = useState('Chopeiras') // Nova seleção
+  const [categoriaEquipamento, setCategoriaEquipamento] = useState('Chopeiras') 
   const [descricaoEquipamento, setDescricaoEquipamento] = useState('') 
-  const [categoriaExpandida, setCategoriaExpandida] = useState(null) // Controle de sanfona no estoque
-  const [categoriaExpandidaPedido, setCategoriaExpandidaPedido] = useState(null) // Controle de sanfona nos pedidos
+  const [categoriaExpandida, setCategoriaExpandida] = useState(null) 
+  const [categoriaExpandidaPedido, setCategoriaExpandidaPedido] = useState(null) 
 
   const [pedidos, setPedidos] = useState([])
   const [clienteIdSelecionado, setClienteIdSelecionado] = useState('')
@@ -24,12 +26,14 @@ function App() {
   const [marcaBarril, setMarcaBarril] = useState('')
   const [tamanhoBarrilLitros, setTamanhoBarrilLitros] = useState('')
   const [valorTotal, setValorTotal] = useState('')
+  const [formaPagamentoPedido, setFormaPagamentoPedido] = useState('PIX') // NOVO CAMPO PEDIDO
   
   const [buscaClienteNoPedido, setBuscaClienteNoPedido] = useState('')
   const [movimentacoes, setMovimentacoes] = useState([])
   const [descricaoSaida, setDescricaoSaida] = useState('')
   const [valorSaida, setValorSaida] = useState('')
   const [dataSaida, setDataSaida] = useState('')
+  const [formaPagamentoSaida, setFormaPagamentoSaida] = useState('Dinheiro') // NOVO CAMPO SAÍDA
 
   // ==========================================
   // BUSCAS
@@ -47,11 +51,25 @@ function App() {
   }, [abaAtual])
 
   // ==========================================
+  // VIA CEP
+  // ==========================================
+  const handleCepChange = async (e) => {
+    const cepDigitado = e.target.value.replace(/\D/g, '');
+    setCep(cepDigitado);
+    if (cepDigitado.length === 8) {
+      try {
+        const res = await fetch(`https://viacep.com.br/ws/${cepDigitado}/json/`);
+        const dados = await res.json();
+        if (!dados.erro) setEndereco(`${dados.logradouro}, Bairro ${dados.bairro}, ${dados.localidade} - ${dados.uf}`);
+      } catch (erro) { console.error("Erro ao buscar CEP", erro); }
+    }
+  }
+
+  // ==========================================
   // LÓGICA E CÁLCULOS
   // ==========================================
   const clientesFiltrados = clientes.filter(c => c.nomeCompleto.toLowerCase().includes(termoBuscaCliente.toLowerCase()) || c.cpf.includes(termoBuscaCliente))
   const clientesDropdownFiltrados = clientes.filter(c => c.nomeCompleto.toLowerCase().includes(buscaClienteNoPedido.toLowerCase()) || c.cpf.includes(buscaClienteNoPedido))
-
   const categoriasDisponiveis = ['Chopeiras', 'Extratoras', 'Cilindros', 'Pingadeiras', 'Outros']
 
   const faturamentoTotal = pedidos.reduce((soma, pedido) => soma + pedido.valorTotal, 0)
@@ -59,9 +77,26 @@ function App() {
   const subtotalCaixa = faturamentoTotal - despesasTotal
 
   const historicoCaixaUnificado = [
-    ...pedidos.map(p => ({ id: `p-${p.id}`, descricao: `Pedido - ${p.cliente?.nomeCompleto || 'Desconhecido'}`, tipo: 'Entrada', valor: p.valorTotal, data: p.dataEvento })),
-    ...movimentacoes.map(m => ({ id: `m-${m.id}`, descricao: m.descricao, tipo: 'Saída', valor: m.valor, data: m.data }))
+    ...pedidos.map(p => ({ id: `p-${p.id}`, descricao: `Pedido - ${p.cliente?.nomeCompleto || 'Desconhecido'}`, tipo: 'Entrada', valor: p.valorTotal, data: p.dataEvento, formaPagamento: p.formaPagamento || 'PIX' })),
+    ...movimentacoes.map(m => ({ id: `m-${m.id}`, descricao: m.descricao, tipo: 'Saída', valor: m.valor, data: m.data, formaPagamento: m.formaPagamento || 'Dinheiro' }))
   ].sort((a, b) => new Date(b.data) - new Date(a.data))
+
+  // RESUMO DE ENTRADAS POR FORMA DE PAGAMENTO
+  const entradasPix = historicoCaixaUnificado.filter(i => i.tipo === 'Entrada' && i.formaPagamento === 'PIX').reduce((acc, i) => acc + i.valor, 0)
+  const entradasCartao = historicoCaixaUnificado.filter(i => i.tipo === 'Entrada' && i.formaPagamento === 'Cartão').reduce((acc, i) => acc + i.valor, 0)
+  const entradasDinheiro = historicoCaixaUnificado.filter(i => i.tipo === 'Entrada' && i.formaPagamento === 'Dinheiro').reduce((acc, i) => acc + i.valor, 0)
+
+  const chartDataMap = {};
+  historicoCaixaUnificado.forEach(item => {
+    const dateKey = new Date(item.data).toLocaleDateString('pt-BR');
+    if(!chartDataMap[dateKey]) chartDataMap[dateKey] = { data: dateKey, Entradas: 0, Saidas: 0 };
+    if(item.tipo === 'Entrada') chartDataMap[dateKey].Entradas += item.valor;
+    if(item.tipo === 'Saída') chartDataMap[dateKey].Saidas += item.valor;
+  });
+  const dadosGrafico = Object.values(chartDataMap).reverse();
+
+  const hojeString = new Date().toLocaleDateString('pt-BR');
+  const entregasDeHoje = pedidos.filter(p => !p.concluido && new Date(p.dataEvento).toLocaleDateString('pt-BR') === hojeString);
 
   const handleToggleEquipamento = (id) => {
     if (equipamentosSelecionadosIds.includes(id)) setEquipamentosSelecionadosIds(equipamentosSelecionadosIds.filter(item => item !== id))
@@ -76,8 +111,8 @@ function App() {
     const url = clienteEditandoId ? `http://localhost:5249/api/Clientes/${clienteEditandoId}` : 'http://localhost:5249/api/Clientes'
     const metodo = clienteEditandoId ? 'PUT' : 'POST'
     try {
-      const res = await fetch(url, { method: metodo, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: clienteEditandoId || 0, nomeCompleto: nome, cpf, endereco, cep, dataNascimento: new Date().toISOString(), observacoes: "Interface" }) })
-      if (res.ok) { buscarClientes(); setNome(''); setCpf(''); setEndereco(''); setCep(''); setClienteEditandoId(null) } 
+      const res = await fetch(url, { method: metodo, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: clienteEditandoId || 0, nomeCompleto: nome, cpf, endereco, numero, cep, dataNascimento: new Date().toISOString(), observacoes }) })
+      if (res.ok) { buscarClientes(); setNome(''); setCpf(''); setEndereco(''); setNumero(''); setCep(''); setObservacoes(''); setClienteEditandoId(null) } 
       else if (res.status === 400) { const erro = await res.json(); alert("⚠️ " + erro.mensagem) }
     } catch (erro) { console.error(erro) }
   }
@@ -89,7 +124,7 @@ function App() {
     }
   }
 
-  const handleEditarCliente = (cliente) => { setNome(cliente.nomeCompleto); setCpf(cliente.cpf); setEndereco(cliente.endereco); setCep(cliente.cep || ''); setClienteEditandoId(cliente.id); window.scrollTo({ top: 0, behavior: 'smooth' }) }
+  const handleEditarCliente = (cliente) => { setNome(cliente.nomeCompleto); setCpf(cliente.cpf); setEndereco(cliente.endereco); setNumero(cliente.numero || ''); setCep(cliente.cep || ''); setObservacoes(cliente.observacoes || ''); setClienteEditandoId(cliente.id); window.scrollTo({ top: 0, behavior: 'smooth' }) }
 
   const handleSalvarEquipamento = async (e) => {
     e.preventDefault()
@@ -110,18 +145,28 @@ function App() {
     e.preventDefault()
     if (equipamentosSelecionadosIds.length === 0) { alert("Selecione ao menos um equipamento para o pedido!"); return; }
     
-    const novoPedido = { clienteId: parseInt(clienteIdSelecionado), equipamentoIds: equipamentosSelecionadosIds.join(','), dataEvento: dataEvento, marcaBarril: marcaBarril, tamanhoBarrilLitros: parseInt(tamanhoBarrilLitros), pagamentoAberto: true, valorTotal: parseFloat(valorTotal), concluido: false }
+    const novoPedido = { 
+      clienteId: parseInt(clienteIdSelecionado), 
+      equipamentoIds: equipamentosSelecionadosIds.join(','), 
+      dataEvento: dataEvento, 
+      marcaBarril: marcaBarril, 
+      tamanhoBarrilLitros: parseInt(tamanhoBarrilLitros), 
+      pagamentoAberto: true, 
+      valorTotal: parseFloat(valorTotal), 
+      formaPagamento: formaPagamentoPedido, // NOVO SALVAMENTO
+      concluido: false 
+    }
     try {
       const res = await fetch('http://localhost:5249/api/Pedidos', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(novoPedido) })
-      if (res.ok) { buscarPedidos(); setClienteIdSelecionado(''); setEquipamentosSelecionadosIds([]); setDataEvento(''); setMarcaBarril(''); setTamanhoBarrilLitros(''); setValorTotal(''); setBuscaClienteNoPedido(''); setCategoriaExpandidaPedido(null) }
+      if (res.ok) { buscarPedidos(); setClienteIdSelecionado(''); setEquipamentosSelecionadosIds([]); setDataEvento(''); setMarcaBarril(''); setTamanhoBarrilLitros(''); setValorTotal(''); setFormaPagamentoPedido('PIX'); setBuscaClienteNoPedido(''); setCategoriaExpandidaPedido(null) }
     } catch (erro) { console.error(erro) }
   }
 
   const handleSalvarSaidaCaixa = async (e) => {
     e.preventDefault()
     try {
-      const res = await fetch('http://localhost:5249/api/MovimentacaoCaixa', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ descricao: descricaoSaida, tipo: 'Saida', valor: parseFloat(valorSaida), data: dataSaida }) })
-      if (res.ok) { buscarMovimentacoes(); setDescricaoSaida(''); setValorSaida(''); setDataSaida('') }
+      const res = await fetch('http://localhost:5249/api/MovimentacaoCaixa', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ descricao: descricaoSaida, tipo: 'Saida', valor: parseFloat(valorSaida), data: dataSaida, formaPagamento: formaPagamentoSaida }) })
+      if (res.ok) { buscarMovimentacoes(); setDescricaoSaida(''); setValorSaida(''); setDataSaida(''); setFormaPagamentoSaida('Dinheiro') }
     } catch (erro) { console.error(erro) }
   }
 
@@ -137,12 +182,13 @@ function App() {
   const handleGerarRecibo = (pedido) => {
     const dataFormatada = new Date(pedido.dataEvento).toLocaleDateString('pt-BR');
     const horaFormatada = new Date(pedido.dataEvento).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
-    const textoRecibo = `🍺 *GRAN BIER - Confirmação de Evento* 🍺\n\n👤 *Cliente:* ${pedido.cliente?.nomeCompleto || 'N/A'}\n📍 *Endereço:* ${pedido.cliente?.endereco || 'N/A'}\n📬 *CEP:* ${pedido.cliente?.cep || 'N/A'}\n📅 *Data da Entrega:* ${dataFormatada}\n⏰ *Horário da Entrega:* ${horaFormatada}\n🍻 *Chopp:* ${pedido.marcaBarril} (${pedido.tamanhoBarrilLitros} Litros)\n💰 *Valor Total:* R$ ${pedido.valorTotal.toFixed(2).replace('.', ',')}\n\nObrigado pela preferência! Equipe Gran Bier.`;
+    const numeroStr = pedido.cliente?.numero ? `, Nº ${pedido.cliente.numero}` : '';
+    const textoRecibo = `🍺 *GRAN BIER - Confirmação de Evento* 🍺\n\n👤 *Cliente:* ${pedido.cliente?.nomeCompleto || 'N/A'}\n📍 *Endereço:* ${pedido.cliente?.endereco || 'N/A'}${numeroStr}\n📬 *CEP:* ${pedido.cliente?.cep || 'N/A'}\n📅 *Data da Entrega:* ${dataFormatada}\n⏰ *Horário da Entrega:* ${horaFormatada}\n🍻 *Chopp:* ${pedido.marcaBarril} (${pedido.tamanhoBarrilLitros} Litros)\n💰 *Valor Total:* R$ ${pedido.valorTotal.toFixed(2).replace('.', ',')} (${pedido.formaPagamento || 'PIX'})\n\nObrigado pela preferência! Equipe Gran Bier.`;
     navigator.clipboard.writeText(textoRecibo).then(() => alert("✅ Recibo copiado!")).catch(() => alert("Erro ao copiar o recibo."));
   }
 
   // ==========================================
-  // ESTILOS AJUSTADOS (MENORES)
+  // ESTILOS
   // ==========================================
   const estilos = {
     pagina: { padding: '20px', fontFamily: 'sans-serif', backgroundColor: '#f4f4f5', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center' },
@@ -150,17 +196,11 @@ function App() {
     menu: { display: 'flex', gap: '8px', marginBottom: '24px', backgroundColor: '#e4e4e7', padding: '6px', borderRadius: '8px', flexWrap: 'wrap', justifyContent: 'center' },
     botaoMenu: (ativo) => ({ padding: '8px 16px', fontSize: '0.9rem', backgroundColor: ativo ? '#ffffff' : 'transparent', color: ativo ? '#18181b' : '#71717a', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', boxShadow: ativo ? '0 2px 4px rgba(0,0,0,0.05)' : 'none', transition: 'all 0.2s' }),
     formCard: { backgroundColor: '#ffffff', padding: '16px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', marginBottom: '24px', display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center', width: '100%', maxWidth: '900px', alignItems: 'center' },
-    
-    // CAIXAS MENORES
     input: { padding: '6px 10px', fontSize: '0.85rem', borderRadius: '4px', border: '1px solid #d4d4d8', flex: '1 1 140px', backgroundColor: '#ffffff', color: '#18181b' },
-    
     botaoSalvar: { padding: '6px 16px', fontSize: '0.85rem', backgroundColor: '#18181b', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' },
-    listaContainer: { backgroundColor: '#ffffff', padding: '8px 16px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', width: '100%', maxWidth: '900px' },
-    
-    // CATEGORIAS (Sanfona)
+    listaContainer: { backgroundColor: '#ffffff', padding: '8px 16px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', width: '100%', maxWidth: '900px', marginBottom: '24px' },
     categoriaHeader: { padding: '12px 16px', backgroundColor: '#f4f4f5', border: '1px solid #e4e4e7', borderRadius: '6px', marginBottom: '8px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', color: '#27272a' },
     categoriaContent: { padding: '8px', borderLeft: '2px solid #e4e4e7', marginLeft: '8px', marginBottom: '16px' },
-    
     cardItem: { padding: '12px 16px', borderBottom: '1px solid #e4e4e7', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', flexWrap: 'wrap' },
   }
 
@@ -178,12 +218,17 @@ function App() {
       {abaAtual === 'clientes' && (
         <>
           <form onSubmit={handleSalvarCliente} style={estilos.formCard}>
-            <input placeholder="Nome" value={nome} onChange={e => setNome(e.target.value.replace(/[^a-zA-ZÀ-ÿ\s]/g, ''))} required style={estilos.input} />
-            <input placeholder="CPF" value={cpf} onChange={e => setCpf(e.target.value.replace(/\D/g, ''))} required style={estilos.input} maxLength={11} />
-            <input placeholder="Endereço" value={endereco} onChange={e => setEndereco(e.target.value)} required style={estilos.input} />
-            <input placeholder="CEP" value={cep} onChange={e => setCep(e.target.value.replace(/\D/g, ''))} required style={estilos.input} maxLength={8} />
+            <input placeholder="Nome (Só letras)" value={nome} onChange={e => setNome(e.target.value.replace(/[^a-zA-ZÀ-ÿ\s]/g, ''))} required style={estilos.input} />
+            <input placeholder="CPF (Só números)" value={cpf} onChange={e => setCpf(e.target.value.replace(/\D/g, ''))} required style={estilos.input} maxLength={11} />
+            <input placeholder="CEP (Só números)" value={cep} onChange={handleCepChange} required style={estilos.input} maxLength={8} />
+            <input placeholder="Endereço (Rua, Bairro, Cidade)" value={endereco} onChange={e => setEndereco(e.target.value)} required style={estilos.input} />
+            
+            {/* NOVOS CAMPOS AQUI */}
+            <input placeholder="Número / Apto" value={numero} onChange={e => setNumero(e.target.value)} required style={{...estilos.input, flex: '1 1 80px'}} />
+            <input placeholder="Observações (Opcional)" value={observacoes} onChange={e => setObservacoes(e.target.value)} style={{...estilos.input, flex: '1 1 100%'}} />
+            
             <button type="submit" style={{...estilos.botaoSalvar, backgroundColor: clienteEditandoId ? '#2563eb' : '#18181b'}}>{clienteEditandoId ? 'Atualizar' : 'Salvar'}</button>
-            {clienteEditandoId && <button type="button" onClick={() => {setNome(''); setCpf(''); setEndereco(''); setCep(''); setClienteEditandoId(null)}} style={{...estilos.botaoSalvar, backgroundColor: '#f4f4f5', color: '#18181b'}}>Cancelar</button>}
+            {clienteEditandoId && <button type="button" onClick={() => {setNome(''); setCpf(''); setEndereco(''); setNumero(''); setCep(''); setObservacoes(''); setClienteEditandoId(null)}} style={{...estilos.botaoSalvar, backgroundColor: '#f4f4f5', color: '#18181b'}}>Cancelar</button>}
           </form>
           
           <div style={{ width: '100%', maxWidth: '900px', marginBottom: '12px' }}>
@@ -193,7 +238,11 @@ function App() {
           <div style={estilos.listaContainer}>
             {clientesFiltrados.length === 0 ? <p style={{textAlign: 'center', color: '#a1a1aa'}}>Vazio.</p> : clientesFiltrados.map(cliente => (
               <li key={cliente.id} style={estilos.cardItem}>
-                <div style={{ flex: '1' }}><strong style={{ display: 'block', color: '#27272a', fontSize: '1rem' }}>{cliente.nomeCompleto}</strong><span style={{ color: '#71717a', fontSize: '0.8rem' }}>{cliente.endereco} (CEP: {cliente.cep}) | CPF: {cliente.cpf}</span></div>
+                <div style={{ flex: '1' }}>
+                  <strong style={{ display: 'block', color: '#27272a', fontSize: '1rem' }}>{cliente.nomeCompleto}</strong>
+                  <span style={{ color: '#71717a', fontSize: '0.8rem', display: 'block' }}>{cliente.endereco}, Nº {cliente.numero || 'S/N'} (CEP: {cliente.cep})</span>
+                  {cliente.observacoes && <span style={{ color: '#d97706', fontSize: '0.8rem', display: 'block', fontStyle: 'italic' }}>Obs: {cliente.observacoes}</span>}
+                </div>
                 <div style={{ display: 'flex', gap: '6px' }}>
                   <button onClick={() => handleEditarCliente(cliente)} style={{ padding: '4px 10px', fontSize: '0.8rem', borderRadius: '4px', cursor: 'pointer', border: 'none', backgroundColor: '#f4f4f5', color: '#52525b', fontWeight: 'bold' }}>✎ Editar</button>
                   <button onClick={() => handleExcluirCliente(cliente.id)} style={{ padding: '4px 10px', fontSize: '0.8rem', borderRadius: '4px', cursor: 'pointer', border: 'none', backgroundColor: '#fef2f2', color: '#b91c1c', fontWeight: 'bold' }}>🗑 Excluir</button>
@@ -261,10 +310,8 @@ function App() {
               </select>
             </div>
 
-            {/* SELEÇÃO AGRUPADA DE EQUIPAMENTOS */}
             <div style={{ width: '100%', margin: '8px 0', border: '1px solid #e4e4e7', padding: '12px', borderRadius: '6px', backgroundColor: '#fafafa' }}>
               <span style={{ display: 'block', fontWeight: 'bold', marginBottom: '8px', color: '#27272a', fontSize: '0.9rem' }}>Vincular Equipamentos (Selecione):</span>
-              
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                 {categoriasDisponiveis.map(cat => {
                   const livres = equipamentos.filter(e => e.categoria === cat && e.disponivel);
@@ -292,18 +339,41 @@ function App() {
 
             <input type="datetime-local" value={dataEvento} onChange={e => setDataEvento(e.target.value)} required style={estilos.input} />
             <input placeholder="Marca Chopp" value={marcaBarril} onChange={e => setMarcaBarril(e.target.value)} required style={estilos.input} />
-            <input type="number" placeholder="Litros" value={tamanhoBarrilLitros} onChange={e => setTamanhoBarrilLitros(e.target.value)} required style={estilos.input} />
+            <input type="number" placeholder="Litros" value={tamanhoBarrilLitros} onChange={e => setTamanhoBarrilLitros(e.target.value)} required style={{...estilos.input, flex: '1 1 80px'}} />
+            
+            {/* NOVO: Método de Pagamento do Pedido */}
+            <select value={formaPagamentoPedido} onChange={e => setFormaPagamentoPedido(e.target.value)} style={estilos.input}>
+              <option value="PIX">PIX</option>
+              <option value="Cartão">Cartão</option>
+              <option value="Dinheiro">Dinheiro</option>
+            </select>
+            
             <input type="number" step="0.01" placeholder="R$ Total" value={valorTotal} onChange={e => setValorTotal(e.target.value)} required style={estilos.input} />
             <button type="submit" style={estilos.botaoSalvar}>Lançar Pedido</button>
           </form>
 
+          {entregasDeHoje.length > 0 && (
+            <>
+              <h2 style={{ color: '#d97706', fontSize: '1.1rem', marginBottom: '12px', textAlign: 'center' }}>🚚 Entregas de Hoje ({hojeString})</h2>
+              <div style={{...estilos.listaContainer, borderLeft: '4px solid #f59e0b', backgroundColor: '#fffbeb'}}>
+                {entregasDeHoje.map(pedido => (
+                  <div key={`hoje-${pedido.id}`} style={{ padding: '8px 0', borderBottom: '1px solid #fde68a' }}>
+                    <strong style={{ display: 'block', color: '#b45309' }}>{pedido.cliente?.nomeCompleto} - às {new Date(pedido.dataEvento).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}</strong>
+                    <span style={{ fontSize: '0.8rem', color: '#92400e' }}>📍 {pedido.cliente?.endereco}, Nº {pedido.cliente?.numero || 'S/N'}</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+
+          <h2 style={{ color: '#52525b', fontSize: '1.1rem', margin: '24px 0 12px 0' }}>Histórico Geral de Eventos</h2>
           <div style={estilos.listaContainer}>
-            {pedidos.map(pedido => (
+            {pedidos.length === 0 ? <p style={{textAlign: 'center', color: '#a1a1aa'}}>Nenhum pedido lançado.</p> : pedidos.map(pedido => (
               <li key={pedido.id} style={{...estilos.cardItem, opacity: pedido.concluido ? 0.6 : 1}}>
                 <div style={{ flex: '1' }}>
                   <strong style={{ display: 'block', color: '#27272a', fontSize: '1rem' }}>{pedido.cliente?.nomeCompleto || 'Desconhecido'} {pedido.concluido && '✅'}</strong>
                   <span style={{ color: '#71717a', fontSize: '0.8rem', display: 'block', margin: '2px 0' }}>📅 {new Date(pedido.dataEvento).toLocaleDateString('pt-BR')} às {new Date(pedido.dataEvento).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}</span>
-                  <span style={{ color: '#71717a', fontSize: '0.8rem' }}>{pedido.marcaBarril} ({pedido.tamanhoBarrilLitros}L)</span>
+                  <span style={{ color: '#71717a', fontSize: '0.8rem' }}>{pedido.marcaBarril} ({pedido.tamanhoBarrilLitros}L) - Pago via {pedido.formaPagamento || 'PIX'}</span>
                   <div style={{ display: 'flex', gap: '6px', marginTop: '8px' }}>
                     {!pedido.concluido && <button onClick={() => handleConcluirPedido(pedido.id)} style={{ padding: '4px 10px', fontSize: '0.8rem', borderRadius: '4px', cursor: 'pointer', border: 'none', backgroundColor: '#fef3c7', color: '#d97706', fontWeight: 'bold' }}>🔄 Devolver</button>}
                     <button onClick={() => handleGerarRecibo(pedido)} style={{ padding: '4px 10px', fontSize: '0.8rem', borderRadius: '4px', cursor: 'pointer', border: 'none', backgroundColor: '#dcfce7', color: '#16a34a', fontWeight: 'bold' }}>📱 WhatsApp</button>
@@ -320,10 +390,34 @@ function App() {
         <>
           <form onSubmit={handleSalvarSaidaCaixa} style={estilos.formCard}>
             <input placeholder="Despesa (Ex: Fornecedor)" value={descricaoSaida} onChange={e => setDescricaoSaida(e.target.value)} required style={estilos.input} />
+            
+            {/* NOVO: Método de Pagamento da Saída */}
+            <select value={formaPagamentoSaida} onChange={e => setFormaPagamentoSaida(e.target.value)} style={estilos.input}>
+              <option value="Dinheiro">Dinheiro</option>
+              <option value="PIX">PIX</option>
+              <option value="Cartão">Cartão</option>
+            </select>
+
             <input type="number" step="0.01" placeholder="R$ Valor" value={valorSaida} onChange={e => setValorSaida(e.target.value)} required style={estilos.input} />
             <input type="datetime-local" value={dataSaida} onChange={e => setDataSaida(e.target.value)} required style={estilos.input} />
             <button type="submit" style={{ ...estilos.botaoSalvar, backgroundColor: '#dc2626' }}>Lançar Saída</button>
           </form>
+
+          {/* PAINEL DE RESUMO DE ENTRADAS (PIX / CARTÃO / DINHEIRO) */}
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', width: '100%', maxWidth: '900px', marginBottom: '16px' }}>
+            <div style={{ backgroundColor: '#ffffff', padding: '12px', borderRadius: '6px', flex: '1', textAlign: 'center', border: '1px solid #e4e4e7' }}>
+              <span style={{ color: '#71717a', fontSize: '0.8rem', display: 'block' }}>Recebido via PIX</span>
+              <strong style={{ color: '#16a34a', fontSize: '1.1rem' }}>R$ {entradasPix.toFixed(2).replace('.', ',')}</strong>
+            </div>
+            <div style={{ backgroundColor: '#ffffff', padding: '12px', borderRadius: '6px', flex: '1', textAlign: 'center', border: '1px solid #e4e4e7' }}>
+              <span style={{ color: '#71717a', fontSize: '0.8rem', display: 'block' }}>Recebido via Cartão</span>
+              <strong style={{ color: '#2563eb', fontSize: '1.1rem' }}>R$ {entradasCartao.toFixed(2).replace('.', ',')}</strong>
+            </div>
+            <div style={{ backgroundColor: '#ffffff', padding: '12px', borderRadius: '6px', flex: '1', textAlign: 'center', border: '1px solid #e4e4e7' }}>
+              <span style={{ color: '#71717a', fontSize: '0.8rem', display: 'block' }}>Recebido em Dinheiro</span>
+              <strong style={{ color: '#d97706', fontSize: '1.1rem' }}>R$ {entradasDinheiro.toFixed(2).replace('.', ',')}</strong>
+            </div>
+          </div>
 
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', width: '100%', maxWidth: '900px', marginBottom: '24px' }}>
             <div style={{ backgroundColor: '#ffffff', padding: '16px', borderRadius: '6px', flex: '1', textAlign: 'center', borderTop: '4px solid #16a34a', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}><span style={{ color: '#71717a', fontSize: '0.85rem' }}>Entradas</span><strong style={{ display: 'block', color: '#16a34a', fontSize: '1.4rem' }}>R$ {faturamentoTotal.toFixed(2).replace('.', ',')}</strong></div>
@@ -331,12 +425,32 @@ function App() {
             <div style={{ backgroundColor: '#ffffff', padding: '16px', borderRadius: '6px', flex: '1', textAlign: 'center', borderTop: '4px solid #2563eb', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}><span style={{ color: '#71717a', fontSize: '0.85rem' }}>Subtotal</span><strong style={{ display: 'block', color: '#2563eb', fontSize: '1.4rem' }}>R$ {subtotalCaixa.toFixed(2).replace('.', ',')}</strong></div>
           </div>
 
+          {dadosGrafico.length > 0 && (
+            <div style={{ backgroundColor: '#ffffff', padding: '24px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', width: '100%', maxWidth: '900px', marginBottom: '24px' }}>
+              <h3 style={{ color: '#52525b', textAlign: 'center', marginBottom: '16px', fontSize: '1.1rem' }}>Evolução Diária do Caixa</h3>
+              <div style={{ width: '100%', height: 300 }}>
+                <ResponsiveContainer>
+                  <BarChart data={dadosGrafico} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis dataKey="data" tick={{fontSize: 12}} />
+                    <YAxis tick={{fontSize: 12}} />
+                    <Tooltip cursor={{fill: '#f4f4f5'}} />
+                    <Legend wrapperStyle={{fontSize: '12px'}} />
+                    <Bar dataKey="Entradas" fill="#16a34a" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="Saidas" name="Saídas" fill="#dc2626" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          )}
+
+          <h2 style={{ color: '#52525b', fontSize: '1.1rem', marginBottom: '12px' }}>Extrato Detalhado</h2>
           <div style={estilos.listaContainer}>
             {historicoCaixaUnificado.map(item => (
               <div key={item.id} style={{ padding: '12px 16px', borderBottom: '1px solid #e4e4e7', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                   <strong style={{ color: '#27272a', fontSize: '0.9rem' }}>{item.descricao}</strong>
-                  <span style={{ display: 'block', color: '#71717a', fontSize: '0.75rem' }}>{new Date(item.data).toLocaleString('pt-BR')}</span>
+                  <span style={{ display: 'block', color: '#71717a', fontSize: '0.75rem' }}>{new Date(item.data).toLocaleString('pt-BR')} • {item.formaPagamento}</span>
                 </div>
                 <strong style={{ color: item.tipo === 'Entrada' ? '#16a34a' : '#dc2626', fontSize: '0.95rem' }}>{item.tipo === 'Entrada' ? '+' : '-'} R$ {item.valor.toFixed(2).replace('.', ',')}</strong>
               </div>

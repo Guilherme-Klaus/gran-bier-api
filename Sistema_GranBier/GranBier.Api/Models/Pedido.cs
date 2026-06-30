@@ -10,7 +10,6 @@ namespace GranBier.Api.Models
         public int ClienteId { get; set; }
         public Cliente? Cliente { get; set; }
 
-        // Múltiplos IDs de equipamentos
         public string EquipamentoIds { get; set; } = string.Empty;
 
         public DateTime DataEvento { get; set; }
@@ -18,6 +17,10 @@ namespace GranBier.Api.Models
         public int TamanhoBarrilLitros { get; set; }
         public bool PagamentoAberto { get; set; }
         public decimal ValorTotal { get; set; }
+        
+        // NOVO: Controle de Dinheiro, Cartão ou PIX
+        public string FormaPagamento { get; set; } = string.Empty; 
+        
         public bool Concluido { get; set; } = false; 
     }
 }

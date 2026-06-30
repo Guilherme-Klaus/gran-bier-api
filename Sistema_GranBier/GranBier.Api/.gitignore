@@ -1,0 +1,9 @@
+# Ignorar pastas de compilação do C#
+bin/
+obj/
+
+# Ignorar banco de dados SQLite
+*.db
+*.db-shm
+*.db-wal
+*.sqlite

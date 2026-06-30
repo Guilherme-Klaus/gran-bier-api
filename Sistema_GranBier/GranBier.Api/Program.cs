@@ -41,3 +41,9 @@ app.UseCors("LiberouGeral");
 
 app.MapControllers(); 
 app.Run();
+
+# Ignorar arquivos do banco de dados SQLite
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
