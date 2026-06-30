@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("GranBier.Api")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+18318c0596a3e777c519058730713a53225a393e")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+55af96396213da338c0e049d6a9659f6b0fe3781")]
 [assembly: System.Reflection.AssemblyProductAttribute("GranBier.Api")]
 [assembly: System.Reflection.AssemblyTitleAttribute("GranBier.Api")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
