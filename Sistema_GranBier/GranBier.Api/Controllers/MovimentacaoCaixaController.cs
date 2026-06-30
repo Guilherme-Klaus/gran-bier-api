@@ -16,43 +16,18 @@ namespace GranBier.Api.Controllers
             _context = context;
         }
 
-        // POST: api/MovimentacaoCaixa (Registra uma nova entrada ou saída de dinheiro)
-        [HttpPost]
-        public async Task<ActionResult<MovimentacaoCaixa>> RegistrarMovimentacao(MovimentacaoCaixa movimentacao)
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<MovimentacaoCaixa>>> ListarMovimentacoes()
         {
-            _context.MovimentacoesCaixa.Add(movimentacao);
+            return await _context.MovimentacaoCaixa.ToListAsync();
+        }
+
+        [HttpPost]
+        public async Task<ActionResult<MovimentacaoCaixa>> CadastrarMovimentacao(MovimentacaoCaixa movimentacao)
+        {
+            _context.MovimentacaoCaixa.Add(movimentacao);
             await _context.SaveChangesAsync();
             return Ok(movimentacao);
-        }
-
-        // GET: api/MovimentacaoCaixa (Lista todo o extrato financeiro)
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<MovimentacaoCaixa>>> ListarExtrato()
-        {
-            var extrato = await _context.MovimentacoesCaixa.ToListAsync();
-            return Ok(extrato);
-        }
-
-        // GET: api/MovimentacaoCaixa/saldo (Calcula o saldo total da operação)
-        [HttpGet("saldo")]
-        public async Task<ActionResult> ConsultarSaldo()
-        {
-            var entradas = await _context.MovimentacoesCaixa
-                                         .Where(m => m.IsEntrada == true)
-                                         .SumAsync(m => m.Valor);
-                                         
-            var saidas = await _context.MovimentacoesCaixa
-                                       .Where(m => m.IsEntrada == false)
-                                       .SumAsync(m => m.Valor);
-                                       
-            var saldoFinal = entradas - saidas;
-            
-            // Retorna um JSON bonitinho com o resumo financeiro
-            return Ok(new { 
-                TotalEntradas = entradas, 
-                TotalSaidas = saidas, 
-                SaldoAtual = saldoFinal 
-            });
         }
     }
 }

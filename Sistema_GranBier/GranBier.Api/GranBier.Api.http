@@ -1,6 +1,0 @@
-@GranBier.Api_HostAddress = http://localhost:5249
-
-GET {{GranBier.Api_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###

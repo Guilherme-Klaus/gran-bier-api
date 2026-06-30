@@ -16,7 +16,12 @@ namespace GranBier.Api.Controllers
             _context = context;
         }
 
-        // POST: api/Equipamentos (Para adicionar novas chopeiras/cilindros ao estoque)
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<Equipamento>>> ListarTodosEquipamentos()
+        {
+            return await _context.Equipamentos.ToListAsync();
+        }
+
         [HttpPost]
         public async Task<ActionResult<Equipamento>> CadastrarEquipamento(Equipamento equipamento)
         {
@@ -25,22 +30,15 @@ namespace GranBier.Api.Controllers
             return Ok(equipamento);
         }
 
-        // GET: api/Equipamentos (Lista TODOS os equipamentos da empresa)
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Equipamento>>> ListarTodos()
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> ExcluirEquipamento(int id)
         {
-            var equipamentos = await _context.Equipamentos.ToListAsync();
-            return Ok(equipamentos);
-        }
+            var equipamento = await _context.Equipamentos.FindAsync(id);
+            if (equipamento == null) return NotFound();
 
-        // GET: api/Equipamentos/disponiveis (Filtra para mostrar só o que está no galpão)
-        [HttpGet("disponiveis")]
-        public async Task<ActionResult<IEnumerable<Equipamento>>> ListarDisponiveis()
-        {
-            var disponiveis = await _context.Equipamentos
-                                            .Where(e => e.Disponivel == true)
-                                            .ToListAsync();
-            return Ok(disponiveis);
+            _context.Equipamentos.Remove(equipamento);
+            await _context.SaveChangesAsync();
+            return NoContent();
         }
     }
 }

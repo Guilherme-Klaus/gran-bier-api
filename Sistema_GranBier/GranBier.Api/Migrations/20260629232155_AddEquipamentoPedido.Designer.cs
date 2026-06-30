@@ -3,6 +3,7 @@ using System;
 using GranBier.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace GranBier.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260629232155_AddEquipamentoPedido")]
+    partial class AddEquipamentoPedido
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.9");
@@ -22,10 +25,6 @@ namespace GranBier.Api.Migrations
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
-
-                    b.Property<string>("Cep")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
 
                     b.Property<string>("Cpf")
                         .IsRequired()
@@ -57,16 +56,16 @@ namespace GranBier.Api.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("Categoria")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
                     b.Property<string>("Descricao")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<bool>("Disponivel")
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("Tipo")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
 
                     b.HasKey("Id");
 
@@ -97,7 +96,7 @@ namespace GranBier.Api.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("MovimentacaoCaixa");
+                    b.ToTable("MovimentacoesCaixa");
                 });
 
             modelBuilder.Entity("GranBier.Api.Models.Pedido", b =>
@@ -109,15 +108,11 @@ namespace GranBier.Api.Migrations
                     b.Property<int>("ClienteId")
                         .HasColumnType("INTEGER");
 
-                    b.Property<bool>("Concluido")
-                        .HasColumnType("INTEGER");
-
                     b.Property<DateTime>("DataEvento")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("EquipamentoIds")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
+                    b.Property<int>("EquipamentoId")
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("MarcaBarril")
                         .IsRequired()
@@ -142,12 +137,17 @@ namespace GranBier.Api.Migrations
             modelBuilder.Entity("GranBier.Api.Models.Pedido", b =>
                 {
                     b.HasOne("GranBier.Api.Models.Cliente", "Cliente")
-                        .WithMany()
+                        .WithMany("HistoricoDePedidos")
                         .HasForeignKey("ClienteId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Cliente");
+                });
+
+            modelBuilder.Entity("GranBier.Api.Models.Cliente", b =>
+                {
+                    b.Navigation("HistoricoDePedidos");
                 });
 #pragma warning restore 612, 618
         }
