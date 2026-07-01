@@ -17,13 +17,13 @@ namespace GranBier.Api.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<MovimentacaoCaixa>>> ListarMovimentacoes()
+        public async Task<ActionResult<IEnumerable<MovimentacaoCaixa>>> GetMovimentacoes()
         {
             return await _context.MovimentacaoCaixa.ToListAsync();
         }
 
         [HttpPost]
-        public async Task<ActionResult<MovimentacaoCaixa>> CadastrarMovimentacao(MovimentacaoCaixa movimentacao)
+        public async Task<ActionResult<MovimentacaoCaixa>> PostMovimentacao(MovimentacaoCaixa movimentacao)
         {
             _context.MovimentacaoCaixa.Add(movimentacao);
             await _context.SaveChangesAsync();

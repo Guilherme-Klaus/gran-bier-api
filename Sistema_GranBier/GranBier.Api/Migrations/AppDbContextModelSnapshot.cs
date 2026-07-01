@@ -27,11 +27,19 @@ namespace GranBier.Api.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("Cnpj")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Cpf")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("DataNascimento")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DocumentoAnexo")
+                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Endereco")
@@ -47,6 +55,14 @@ namespace GranBier.Api.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Observacoes")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("RazaoSocial")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TipoCliente")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
@@ -83,18 +99,20 @@ namespace GranBier.Api.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.Property<DateTime>("DataHora")
+                    b.Property<DateTime>("Data")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Descricao")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<int?>("FormaPagamento")
-                        .HasColumnType("INTEGER");
+                    b.Property<string>("FormaPagamento")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
 
-                    b.Property<bool>("IsEntrada")
-                        .HasColumnType("INTEGER");
+                    b.Property<string>("Tipo")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
 
                     b.Property<decimal>("Valor")
                         .HasColumnType("TEXT");
@@ -131,11 +149,31 @@ namespace GranBier.Api.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("NumeroPedido")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<bool>("PagamentoAberto")
                         .HasColumnType("INTEGER");
 
-                    b.Property<int>("TamanhoBarrilLitros")
+                    b.Property<int>("QtdBarril20L")
                         .HasColumnType("INTEGER");
+
+                    b.Property<int>("QtdBarril30L")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("QtdBarril50L")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<decimal>("SaldoAPagar")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("StatusPagamento")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("ValorPagoReserva")
+                        .HasColumnType("TEXT");
 
                     b.Property<decimal>("ValorTotal")
                         .HasColumnType("TEXT");

@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace GranBier.Api.Migrations
 {
     /// <inheritdoc />
-    public partial class BancoInicialOficial : Migration
+    public partial class EstruturaFinal : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -17,13 +17,17 @@ namespace GranBier.Api.Migrations
                 {
                     Id = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
+                    TipoCliente = table.Column<string>(type: "TEXT", nullable: false),
+                    Cnpj = table.Column<string>(type: "TEXT", nullable: false),
+                    RazaoSocial = table.Column<string>(type: "TEXT", nullable: false),
                     NomeCompleto = table.Column<string>(type: "TEXT", nullable: false),
                     Cpf = table.Column<string>(type: "TEXT", nullable: false),
                     Endereco = table.Column<string>(type: "TEXT", nullable: false),
                     Numero = table.Column<string>(type: "TEXT", nullable: false),
                     Cep = table.Column<string>(type: "TEXT", nullable: false),
                     DataNascimento = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    Observacoes = table.Column<string>(type: "TEXT", nullable: false)
+                    Observacoes = table.Column<string>(type: "TEXT", nullable: false),
+                    DocumentoAnexo = table.Column<string>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -52,10 +56,10 @@ namespace GranBier.Api.Migrations
                     Id = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
                     Descricao = table.Column<string>(type: "TEXT", nullable: false),
+                    Tipo = table.Column<string>(type: "TEXT", nullable: false),
                     Valor = table.Column<decimal>(type: "TEXT", nullable: false),
-                    DataHora = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    IsEntrada = table.Column<bool>(type: "INTEGER", nullable: false),
-                    FormaPagamento = table.Column<int>(type: "INTEGER", nullable: true)
+                    Data = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    FormaPagamento = table.Column<string>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -68,14 +72,20 @@ namespace GranBier.Api.Migrations
                 {
                     Id = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
+                    NumeroPedido = table.Column<string>(type: "TEXT", nullable: false),
                     ClienteId = table.Column<int>(type: "INTEGER", nullable: false),
                     EquipamentoIds = table.Column<string>(type: "TEXT", nullable: false),
                     DataEvento = table.Column<DateTime>(type: "TEXT", nullable: false),
                     MarcaBarril = table.Column<string>(type: "TEXT", nullable: false),
-                    TamanhoBarrilLitros = table.Column<int>(type: "INTEGER", nullable: false),
-                    PagamentoAberto = table.Column<bool>(type: "INTEGER", nullable: false),
+                    QtdBarril20L = table.Column<int>(type: "INTEGER", nullable: false),
+                    QtdBarril30L = table.Column<int>(type: "INTEGER", nullable: false),
+                    QtdBarril50L = table.Column<int>(type: "INTEGER", nullable: false),
                     ValorTotal = table.Column<decimal>(type: "TEXT", nullable: false),
+                    ValorPagoReserva = table.Column<decimal>(type: "TEXT", nullable: false),
+                    SaldoAPagar = table.Column<decimal>(type: "TEXT", nullable: false),
+                    StatusPagamento = table.Column<string>(type: "TEXT", nullable: false),
                     FormaPagamento = table.Column<string>(type: "TEXT", nullable: false),
+                    PagamentoAberto = table.Column<bool>(type: "INTEGER", nullable: false),
                     Concluido = table.Column<bool>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
